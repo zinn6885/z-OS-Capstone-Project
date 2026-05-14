@@ -1,7 +1,7 @@
        Identification Division.
        Program-Id. CAPUPD.
       *****************************************************************
-      * Update a Free Throw record
+      * Program for viewing, adding, deleting or updating records
       *****************************************************************
        Data Division.
        Working-Storage Section.
@@ -89,7 +89,7 @@
            .
        0000-First-Time.
       *****************************************************************
-      * First entry into this program in a conversation.
+      * Initiate the map and move appropriate values to display
       *****************************************************************
            move spaces to CON-First-Time
            move spaces to CAPUMAPO
@@ -101,7 +101,7 @@
            .
        1000-Process-User-Input.
       *****************************************************************
-      * Route control to the appropriate paragraph based on transid.
+      * Check which keys the user pressed and route accordingly
       *****************************************************************
            perform 1100-Receive-Map
            perform 1200-Check-Attention-Id-Keys
@@ -137,6 +137,9 @@
            end-evaluate
            .
        1300-Set-Map.
+      *****************************************************************
+      * Set the correct titles for feilds depending on language
+      ***************************************************************** 
            if CP-LANG = "EN"
                move "     Contact Details" to CDEETO
                move "      First Name: " to FNAMETO
@@ -240,6 +243,9 @@
            move WS-DATE-NUMERIC to LRESPO
            .
        4100-Set-Host-Variables.
+      *****************************************************************
+      * Format the variables to be passed to a sql statement 
+      *****************************************************************
            compute CP-FIRST-NAME-LEN =
                function length(function trim(CP-FIRST-NAME-TEXT))
            end-compute
@@ -283,7 +289,7 @@
            .
        5000-Save-Changes.
       *****************************************************************
-      * Add the record unless there are still validation errors.
+      * Update the record unless there are still validation errors.
       *****************************************************************
            perform 4000-Copy-from-Record-to-Map
            if Validation-Errors greater than spaces
@@ -362,10 +368,10 @@
            set Highlight-Error to true
            perform 9100-Display-and-Return
            .
+       9100-Display-and-Return.
       *****************************************************************
       * Display the output map and do a pseudoconversational return.
       *****************************************************************
-       9100-Display-and-Return.
            perform 1300-Set-Map
            move "UPDATE" to SCRTITLO
            move DFHBMASK to EMAILA
@@ -388,6 +394,9 @@
            END-EXEC
            .
        9500-Transfer-to-View.
+      *****************************************************************
+      * Transfer back to the view screen terminate the update program
+      *****************************************************************
            EXEC CICS START
                TRANSID(CP-View-TransId)
                TERMID(EIBTRMID)

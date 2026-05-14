@@ -1,8 +1,7 @@
        Identification Division.
-       Program-Id. FDTVAL.
+       Program-Id. CAPVAL.
       *****************************************************************
-      * Validate record field values and calculate computed values
-      * for Free Throw Statistics "add" and "update" functions.
+      * Validate record field values I.e. email, DNC and names
       *****************************************************************
        Data Division.
        Working-Storage Section.
@@ -29,6 +28,9 @@
            .
 
        1000-Initialize.
+      *****************************************************************
+      * Get the container and reset any display messages
+      *****************************************************************
            EXEC CICS GET CONTAINER(CP-Container-Name)
                CHANNEL(CP-Channel-Name)
                INTO(CP-Container-Data)
@@ -39,11 +41,19 @@
            .
 
        2000-Check-Required-Fields.
+      *****************************************************************
+      * call performs that will validate Names and Emails
+      *****************************************************************
            perform 2100-Validate-Email
            perform 2200-Validate-Names
+           perform 2300-Check-DNC
+           perform 2400-Check-Language-Code
            .
 
        2100-Validate-Email.
+      *****************************************************************
+      * Ensure emails are of format **@**.**
+      *****************************************************************
            move zero to Tally-Field
            inspect CP-Email-Addr-TEXT
                Tallying Tally-Field for all '@'
@@ -63,6 +73,9 @@
            .
 
        2200-Validate-Names.
+      *****************************************************************
+      * Ensure required name fields are not empty
+      *****************************************************************
            if CP-EMAIL-ADDR-TEXT not greater than spaces
                move "Email:Address" to Missing-Field-Names
                move "," to Delimiter-Value
@@ -92,8 +105,10 @@
                move Error-Message-Work-Area to Validation-Errors
            end-if
            .
-
        2300-Check-DNC.
+      *****************************************************************
+      * Ensure the DNC matches specifications
+      *****************************************************************
            if not (CP-Do-Not-Contact = 'P' or
                    CP-Do-Not-Contact = 'X' or
                    CP-Do-Not-Contact = ' ')
@@ -102,12 +117,19 @@
            .
 
        2400-Check-Language-Code.
+      *****************************************************************
+      * Ensure language code matches specifications
+      *****************************************************************
            if not (CP-Lang = 'EN' or CP-Lang = 'ES')
                move "Invalid Language Code" to Validation-Errors
            end-if
            .
 
        4000-Return-to-Caller.
+      *****************************************************************
+      * After performing validation, return control to the calling 
+      * program
+      *****************************************************************
            EXEC CICS PUT CONTAINER(CP-Container-Name)
                CHANNEL(CP-Channel-Name)
                FROM(CP-Container-Data)

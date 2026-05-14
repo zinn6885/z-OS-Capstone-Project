@@ -42,6 +42,10 @@
            05  First-Time-Flag                pic x.
            05  Record-to-Pass                 pic x(207).
            05  filler                         pic x(79).
+           05  Action-Key                     pic x.
+               88  Add-Key                    value 'A'.
+               88  Update-Key                 value 'C'.
+               88  Delete-Key                 value 'D'.
        01  Pagination-Fields.
            05  HV-Key.
                15 HV-EMAIL-ADDR.
@@ -171,21 +175,24 @@
                    perform varying PAG-Subscript from 1 by 1
                            until PAG-Subscript
                                greater than Max-Rows-per-Page
-                       evaluate ACTI(PAG-Subscript)
-                           when "I"
-                               perform 1300-Copy-Selected-Record
-                               move CP-Update-Program
-                                    to Transfer-to-Program
-                               perform 9400-Transfer
-                           when other
-                               continue
-                       end-evaluate
+                       if ACTI(PAG-Subscript) = 'A' or
+                          ACTI(PAG-Subscript) = 'C' or
+                          ACTI(PAG-Subscript) = 'D'
+                           move ACTI(PAG-Subscript) to Action-Key
+                           perform 1300-Copy-Selected-Record
+                           move CP-Update-Program
+                                to Transfer-to-Program
+                           perform 9400-Transfer
+                       end-if
                    end-perform
                when other
                    perform 9900-End-Transaction
            end-evaluate
            .
        1210-Increment-Key.
+      *****************************************************************
+      * Grab the Key before forward filling map
+      *****************************************************************
            EXEC SQL
            SELECT
                EMAIL_ADDR,
@@ -211,6 +218,9 @@
            end-if
            .
        1220-Decrement-Key.
+      *****************************************************************
+      * Grab the previous row before backward filling map
+      *****************************************************************
            EXEC SQL
            SELECT
                EMAIL_ADDR,
@@ -243,41 +253,43 @@
            move spaces to Container-to-Pass
            move "Y" to First-Time-Flag
            initialize DCLCONTACTS
-           move EMAILI(PAG-Subscript) to EMAIL-ADDR-TEXT
-           move NAMEI(PAG-Subscript) to SURNAME-TEXT
-           move DNCI(PAG-Subscript) to DO-NOT-CONTACT
-           compute EMAIL-ADDR-LEN =
-               function length(function trim(EMAIL-ADDR-TEXT))
-           end-compute
-           compute SURNAME-LEN =
-               function length(function trim(SURNAME-TEXT))
-           end-compute
-           if DO-NOT-CONTACT = spaces
-               move -1 to DO-NOT-CONTACT-IND
-           else
-               move 0 to DO-NOT-CONTACT-IND
+           if not Add-Key
+               move EMAILI(PAG-Subscript) to EMAIL-ADDR-TEXT
+               move NAMEI(PAG-Subscript) to SURNAME-TEXT
+               move DNCI(PAG-Subscript) to DO-NOT-CONTACT
+               compute EMAIL-ADDR-LEN =
+                   function length(function trim(EMAIL-ADDR-TEXT))
+               end-compute
+               compute SURNAME-LEN =
+                   function length(function trim(SURNAME-TEXT))
+               end-compute
+               if DO-NOT-CONTACT = spaces
+                   move -1 to DO-NOT-CONTACT-IND
+               else
+                   move 0 to DO-NOT-CONTACT-IND
+               end-if
+               EXEC SQL
+               SELECT
+                      LANG,
+                      FIRST_NAME,
+                      MIDDLE_NAME,
+                      ADDL_NAME,
+                      LAST_CONTACT,
+                      LAST_RESPONSE,
+                      DO_NOT_CONTACT
+               INTO
+                      :LANG,
+                      :FIRST-NAME,
+                      :MIDDLE-NAME :MIDDLE-NAME-IND,
+                      :ADDL-NAME :ADDL-NAME-IND,
+                      :LAST-CONTACT :LAST-CONTACT-IND,
+                      :LAST-RESPONSE :LAST-RESPONSE-IND,
+                      :DO-NOT-CONTACT :DO-NOT-CONTACT-IND
+               FROM CONTACTS
+               WHERE EMAIL_ADDR = :EMAIL-ADDR
+                 AND SURNAME    = :SURNAME
+               END-EXEC
            end-if
-           EXEC SQL
-           SELECT
-                  LANG,
-                  FIRST_NAME,
-                  MIDDLE_NAME,
-                  ADDL_NAME,
-                  LAST_CONTACT,
-                  LAST_RESPONSE,
-                  DO_NOT_CONTACT
-           INTO
-                  :LANG,
-                  :FIRST-NAME,
-                  :MIDDLE-NAME :MIDDLE-NAME-IND,
-                  :ADDL-NAME :ADDL-NAME-IND,
-                  :LAST-CONTACT :LAST-CONTACT-IND,
-                  :LAST-RESPONSE :LAST-RESPONSE-IND,
-                  :DO-NOT-CONTACT :DO-NOT-CONTACT-IND
-           FROM CONTACTS
-           WHERE EMAIL_ADDR = :EMAIL-ADDR
-             AND SURNAME    = :SURNAME
-           END-EXEC
            move DCLCONTACTS to Record-To-Pass
            move Max-Rows-per-Page to PAG-Subscript
            .
@@ -386,11 +398,6 @@
                             NAMEA(PAG-Subscript)
                             DNCA(PAG-Subscript)
                end-perform
-      *    else
-      *        perform 2400-Read-Next
-      *        if SQLCODE = 100
-      *            set End-of-Data to true
-      *        end-if
            end-if
            .
        2300-Next-Record.

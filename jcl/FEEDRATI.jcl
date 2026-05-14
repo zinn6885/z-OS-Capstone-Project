@@ -1,4 +1,4 @@
-//MATEGD99 JOB (123),'FEEDC',CLASS=A,MSGCLASS=A,MSGLEVEL=(1,1),
+//MATEGE99 JOB (123),'FEEDC',CLASS=A,MSGCLASS=A,MSGLEVEL=(1,1),
 //             NOTIFY=&SYSUID
 //PLIB    JCLLIB ORDER=(MATE1.PROCLIB)
 //************************************************************
@@ -30,9 +30,9 @@
 //DEFINE   EXEC PGM=IDCAMS
 //SYSPRINT DD SYSOUT=*
 //SYSIN    DD *
-  DELETE MATEGD.CAP.SORTED GDG FORCE
+  DELETE MATEGE.CAP.SORTED GDG FORCE
   IF LASTCC < 9 THEN -
-  DEFINE GDG(NAME(MATEGD.CAP.SORTED) -
+  DEFINE GDG(NAME(MATEGE.CAP.SORTED) -
     LIMIT(50) -
     NOEMPTY -
     SCRATCH)
@@ -105,3 +105,51 @@ DNC,143,1,CH
 //SYSIN    DD *
   SORT FIELDS=(EMAIL,A,NAME,A)
 /*
+//*END FEEDC
+//************************************************************
+//* DEFINE GDG                                               *
+//************************************************************
+//DEFINE   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE MATEGE.CAP.CLEAN GDG FORCE
+  IF LASTCC < 9 THEN -
+  DEFINE GDG(NAME(MATEGE.CAP.CLEAN) -
+    LIMIT(50) -
+    NOEMPTY -
+    SCRATCH)
+/*
+//************************************************************
+//* ALLOCATE PS DATA SET USING IEFBR14 UTILITY               *
+//************************************************************
+//ALLOC    EXEC PGM=IEFBR14
+//SYSPRINT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSDUMP  DD SYSOUT=*
+//DD1      DD DSN=&SYSUID..CAP.CLEAN(+1),
+//            DISP=(NEW,CATLG,DELETE),
+//            SPACE=(TRK,(1,1),RLSE),UNIT=SYSDA,
+//            VOL=SER=DEVHD1,
+//            DCB=(DSORG=PS,RECFM=FB,LRECL=143,BLKSIZE=14300)
+//************************************************************
+//* COMPILE AND RUN COBOL CODE                               *
+//************************************************************
+//CL      EXEC COBOLCL,
+//             COPYLIB=&SYSUID..CAP.COPY,
+//             LOADLIB=&SYSUID..CAP.LOAD,
+//             SRCLIB=&SYSUID..CAP.SOURCE,
+//             MEMBER=RATIO
+//RUNCODE EXEC PGM=RATIO
+//SFILE   DD DSN=&SYSUID..CAP.SORTED(0),DISP=SHR
+//EFILE   DD DSN=&SYSUID..CAP.ERRORS,DISP=SHR
+//CLFILE  DD DSN=&SYSUID..CAP.CLEAN(+1),DISP=SHR
+//STEPLIB DD DSN=&SYSUID..CAP.LOAD,DISP=SHR
+//************************************************************
+//* COMPArE Two files for diff                               *
+//************************************************************                                             
+//STEP1    EXEC PGM=ISRSUPC,PARM=(DELTAL,LINECMP) 
+//NEWDD    DD DSN=MATEGE.CAP.CLEAN(+1),DISP=SHR 
+//OLDDD    DD DSN=MATEGE.CAP.EXPECTED,DISP=SHR
+//OUTDD    DD SYSOUT=*                            
+//SYSIN    DD DUMMY                               
+/*                                                
