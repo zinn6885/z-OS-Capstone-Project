@@ -178,7 +178,6 @@
                        if ACTI(PAG-Subscript) = 'A' or
                           ACTI(PAG-Subscript) = 'C' or
                           ACTI(PAG-Subscript) = 'D'
-                           move ACTI(PAG-Subscript) to Action-Key
                            perform 1300-Copy-Selected-Record
                            move CP-Update-Program
                                 to Transfer-to-Program
@@ -251,6 +250,7 @@
       * container to pass to the update or delete program.
       *****************************************************************
            move spaces to Container-to-Pass
+           move ACTI(PAG-Subscript) to Action-Key
            move "Y" to First-Time-Flag
            initialize DCLCONTACTS
            if not Add-Key

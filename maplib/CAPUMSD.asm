@@ -82,7 +82,6 @@ LRESP   DFHMDF POS=(15,29),PICOUT='9999/99/99',ATTRB=(ASKIP,BRT),      X
 
 MSG     DFHMDF POS=(23,1),LENGTH=79,ATTRB=(ASKIP,BRT),COLOR=YELLOW
 INFOT   DFHMDF POS=(24,1),LENGTH=79,ATTRB=(ASKIP,NORM),                X
-               INITIAL='ENTER Validate  PF4 ADD  PF5 Save  PF6 Delete  X
-               PF12 Cancel'
+               INITIAL='ENTER Validate     PF5 Save     PF12 Cancel'
         DFHMSD TYPE=FINAL
         END

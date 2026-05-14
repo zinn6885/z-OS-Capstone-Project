@@ -122,6 +122,9 @@
            end-if
            .
 
+      ******************************************************************
+      * Reformat Feed-1 record to Common Record
+      ******************************************************************
        1300-Reformat.
            move zero to Tally-Field
            move spaces to Common-record
@@ -153,14 +156,26 @@
            display Common-Record
            .
 
+      ******************************************************************
+      * Ensure email is valid by checking for @ and . after @
+      ******************************************************************
        1310-Validate-Email.
            move zero to Tally-Field
            inspect F1-Email-Address
                Tallying Tally-Field for all '@'
-           inspect F1-Email-Address
-               Tallying Tally-Field for all '.com'
-           if not Tally-Field = 2
+           if Tally-Field = 1
+               unstring F1-Email-Address
+                   delimited by '@'
+                   into Before-At After-At
+               end-unstring
+               inspect After-At
+                   Tallying Tally-Field for all '.'
+               if not Tally-Field = 2
+                   move 'E' to Error-Flag
+               end-if
+           else
                move 'E' to Error-Flag
+           end-if
            .
 
        2000-Read-Feed2.
@@ -192,6 +207,9 @@
            end-if
            .
 
+      ******************************************************************
+      * Reformat Feed-2 record to Common Record
+      ******************************************************************
        2300-Reformat.
            move spaces to Common-record
            perform 2310-Validate-Email
@@ -225,10 +243,19 @@
            move zero to Tally-Field
            inspect F2-Email-Address
                Tallying Tally-Field for all '@'
-           inspect F2-Email-Address
-               Tallying Tally-Field for all '.com'
-           if not Tally-Field = 2
+           if Tally-Field = 1
+               unstring F2-Email-Address
+                   delimited by '@'
+                   into Before-At After-At
+               end-unstring
+               inspect After-At
+                   Tallying Tally-Field for all '.'
+               if not Tally-Field = 2
+                   move 'E' to Error-Flag
+               end-if
+           else
                move 'E' to Error-Flag
+           end-if
            .
 
        3000-Read-Feed3.
@@ -260,6 +287,9 @@
            end-if
            .
 
+      ******************************************************************
+      * Reformat Feed-3 record to Common Record
+      ******************************************************************
        3300-Reformat.
            move spaces to Common-record
            if F3-Middle-Name = "STOP"
@@ -319,6 +349,9 @@
            end-if
            .
 
+      ******************************************************************
+      * Write errors to Error-File and Common records to Common-File
+      ******************************************************************
        4000-Write.
            if Record-Error
                open extend Error-File

@@ -41,6 +41,10 @@
                10 CP-DO-NOT-CONTACT       PIC X(1).
                10 CP-DO-NOT-CONTACT-IND   PIC S9(4) USAGE COMP.
            02  Validation-Errors               pic x(79).
+           02  Action-Key                      pic x.
+               88  Add-Key                     value 'A'.
+               88  Update-Key                  value 'C'.
+               88  Delete-Key                  value 'D'.
        01  CICS-Response-Code                  pic s9(9) binary.
        01  Display-Messages.
            05  Highlight-Control               pic x.
@@ -51,8 +55,12 @@
            05  MSG-Initial-Prompt.
                10  filler                      pic x(79)
                value "Overtype values to be changed".
+           05  MSG-Record-Added                pic x(79)
+               value "Record successfully added".
            05  MSG-Record-Updated              pic x(79)
                value "Record successfully updated".
+           05  MSG-Record-Deleted              pic x(79)
+               value "Record successfully deleted".
            05  MSG-Container-Error.
                10  filler                      pic x(14)
                value 'GET CONTAINER('.
@@ -125,9 +133,18 @@
       *****************************************************************
            evaluate EIBAID
                when DFHENTER
-                   perform 2000-Validate-Input
+                   if not Delete-Key
+                       perform 2000-Validate-Input
+                   end-if
                when DFHPF5
-                   perform 5000-Save-Changes
+                   evaluate true
+                       when Add-Key
+                           perform 5100-Add-Changes
+                       when Update-Key
+                           perform 5000-Save-Changes
+                       when other
+                           perform 5200-Delete-Changes
+                   end-evaluate
                when DFHPF12
                    perform 9500-Transfer-to-View
                when other
@@ -139,7 +156,7 @@
        1300-Set-Map.
       *****************************************************************
       * Set the correct titles for feilds depending on language
-      ***************************************************************** 
+      *****************************************************************
            if CP-LANG = "EN"
                move "     Contact Details" to CDEETO
                move "      First Name: " to FNAMETO
@@ -152,12 +169,8 @@
                move "Dates formatted in (YYYY/MM/DD)" to DFORMTO
                move "    Last Contact: " to LCONTTO
                move "   Last Response: " to LRESPTO
-               string
-                    "ENTER Validate  PF4 ADD  PF5 Save  PF6 Delete"
-                    delimited by size
-                    "  PF12 Cancel" delimited by size
-                    into INFOTO
-               end-string
+               move "ENTER Validate     PF5 Save     PF12 Cancel"
+                 to INFOTO
            else
                move "Detalles de Contacto" to CDEETO
                move "   Primer Nombre: " to FNAMETO
@@ -170,12 +183,8 @@
                move "Fechas en formato (AAAA/MM/DD)" to DFORMTO
                move " Ultimo Contacto: " to LCONTTO
                move "Ultima Respuesta: " to LRESPTO
-               string
-                    "ENTER Validar  PF4 Agregar  PF5 Guardar  PF6 Borra"
-                    delimited by size
-                    "r  PF12 Cancelar" delimited by size
-                    into INFOTO
-               end-string
+               move "ENTER Validar     PF5 Guardar     PF12 Cancelar"
+                 to INFOTO
            end-if
            .
        2000-Validate-Input.
@@ -244,7 +253,7 @@
            .
        4100-Set-Host-Variables.
       *****************************************************************
-      * Format the variables to be passed to a sql statement 
+      * Format the variables to be passed to a sql statement
       *****************************************************************
            compute CP-FIRST-NAME-LEN =
                function length(function trim(CP-FIRST-NAME-TEXT))
@@ -318,6 +327,59 @@
                end-if
            end-if
            .
+       5100-Add-Changes.
+      *****************************************************************
+      * Add the record unless there are still validation errors.
+      *****************************************************************
+           perform 4000-Copy-from-Record-to-Map
+           if Validation-Errors greater than spaces
+               move Validation-Errors to MSGO
+           else
+               EXEC SQL
+               INSERT INTO CONTACTS (
+                 LANG, SURNAME, FIRST_NAME, MIDDLE_NAME, ADDL_NAME,
+                 EMAIL_ADDR, LAST_CONTACT, LAST_RESPONSE, DO_NOT_CONTACT
+               )
+               VALUES (
+                 :CP-LANG, :CP-SURNAME, :CP-FIRST-NAME,
+                 :CP-MIDDLE-NAME :CP-MIDDLE-NAME-IND,
+                 :CP-ADDL-NAME :CP-ADDL-NAME-IND,
+                 :CP-EMAIL-ADDR, :CP-LAST-CONTACT :CP-LAST-CONTACT-IND,
+                 :CP-LAST-RESPONSE :CP-LAST-RESPONSE-IND,
+                 :CP-DO-NOT-CONTACT :CP-DO-NOT-CONTACT-IND)
+               END-EXEC
+               if SQLCODE = 0
+                   EXEC SQL COMMIT END-EXEC
+                   move MSG-Record-Added to MSGO
+               else
+                   EXEC SQL ROLLBACK END-EXEC
+                   move "ADD" to ERR-Operation
+                   perform 8200-SQL-Error
+               end-if
+           end-if
+           .
+       5200-Delete-Changes.
+      *****************************************************************
+      * Delete the record
+      *****************************************************************
+           if Validation-Errors greater than spaces
+               move Validation-Errors to MSGO
+           else
+               EXEC SQL
+                  DELETE FROM CONTACTS
+                  WHERE EMAIL_ADDR = :CP-EMAIL-ADDR
+                    AND SURNAME    = :CP-SURNAME
+               END-EXEC
+               if SQLCODE = 0
+                   EXEC SQL COMMIT END-EXEC
+                   move MSG-Record-Deleted to MSGO
+               else
+                   EXEC SQL ROLLBACK END-EXEC
+                   move "ADD" to ERR-Operation
+                   perform 8200-SQL-Error
+               end-if
+           end-if
+           .
 
        7000-Get-Container.
       *****************************************************************
@@ -373,10 +435,26 @@
       * Display the output map and do a pseudoconversational return.
       *****************************************************************
            perform 1300-Set-Map
-           move "UPDATE" to SCRTITLO
-           move DFHBMASK to EMAILA
+           evaluate true
+               when Add-Key
+                   move "ADD" to SCRTITLO
+               when Update-Key
+                   move "UPDATE" to SCRTITLO
+               when other
+                   move "DELETE" to SCRTITLO
+           end-evaluate
+           if not Add-Key
+               move DFHBMASK to EMAILA
+           end-if
            move DFHBMASK to LCONTA
            move DFHBMASK to LRESPA
+           if Delete-Key
+               move DFHBMASK to FNAMEA
+               move DFHBMASK to MNAMEA
+               move DFHBMASK to SNAMEA
+               move DFHBMASK to ANAMEA
+               move DFHBMASK to LANGA
+           end-if
            if Highlight-Error
                move DFHRED to MSGC
                move space to Highlight-Control

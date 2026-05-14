@@ -73,6 +73,9 @@
            end-perform
            .
 
+      ******************************************************************
+      * Open Sorted-File
+      ******************************************************************
        1100-Open.
            open input Sorted-File
            if not OK of Sorted-File-Status
@@ -81,6 +84,10 @@
            end-if
            .
 
+      ******************************************************************
+      * Read from Sorted-File sequentially, rationalize names, and
+      * write out records
+      ******************************************************************
        1200-Read-Next.
            read Sorted-File next into Sorted-Record end-read
            if not EOF of Sorted-File-Status
@@ -110,7 +117,7 @@
            if not (C-DNC of Sorted-Record = ' ' or
                    C-DNC of Sorted-Record = 'R')
                move 'E' to Error-Flag
-               display 'Error reading S DNC'
+               display 'Error reading DNC'
            end-if
            .
 
@@ -124,7 +131,7 @@
                        move 'ES' to C-Language-Code of Clean-Record
                    when other
                        move 'E' to Error-Flag
-                       display 'Error reading S name'
+                       display 'Error reading language code'
                end-evaluate
            end-if
            .
@@ -132,7 +139,7 @@
        3300-Check-Name.
            if Tally-Field > 3
                move 'E' to Error-Flag
-               display 'Error reading S name'
+               display 'Error reading name'
            else
                unstring C-Name of Sorted-Record
                    delimited by ' '
@@ -174,6 +181,9 @@
            continue
            .
 
+      ******************************************************************
+      * Write errors to Error-File and Common records to Common-File
+      ******************************************************************
        4000-Write.
            if Record-Error
                open extend Error-File

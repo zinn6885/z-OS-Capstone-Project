@@ -11,6 +11,10 @@
            02  CP-Container-Record.
                copy CONTACT.
            02  Validation-Errors              pic x(79).
+           02  Action-Key                      pic x.
+               88  Add-Key                     value 'A'.
+               88  Update-Key                  value 'C'.
+               88  Delete-Key                  value 'D'.
        01  Error-Message-Work-Area.
            05  filler pic x(18) value "Missing value(s): ".
            05  Missing-Field-Names            pic x(79).
@@ -28,9 +32,9 @@
            .
 
        1000-Initialize.
-      *****************************************************************
+      ******************************************************************
       * Get the container and reset any display messages
-      *****************************************************************
+      ******************************************************************
            EXEC CICS GET CONTAINER(CP-Container-Name)
                CHANNEL(CP-Channel-Name)
                INTO(CP-Container-Data)
@@ -41,9 +45,9 @@
            .
 
        2000-Check-Required-Fields.
-      *****************************************************************
-      * call performs that will validate Names and Emails
-      *****************************************************************
+      ******************************************************************
+      * Call performs that will validate Names and Emails
+      ******************************************************************
            perform 2100-Validate-Email
            perform 2200-Validate-Names
            perform 2300-Check-DNC
@@ -51,9 +55,9 @@
            .
 
        2100-Validate-Email.
-      *****************************************************************
+      ******************************************************************
       * Ensure emails are of format **@**.**
-      *****************************************************************
+      ******************************************************************
            move zero to Tally-Field
            inspect CP-Email-Addr-TEXT
                Tallying Tally-Field for all '@'
@@ -73,9 +77,9 @@
            .
 
        2200-Validate-Names.
-      *****************************************************************
+      ******************************************************************
       * Ensure required name fields are not empty
-      *****************************************************************
+      ******************************************************************
            if CP-EMAIL-ADDR-TEXT not greater than spaces
                move "Email:Address" to Missing-Field-Names
                move "," to Delimiter-Value
@@ -106,9 +110,9 @@
            end-if
            .
        2300-Check-DNC.
-      *****************************************************************
+      ******************************************************************
       * Ensure the DNC matches specifications
-      *****************************************************************
+      ******************************************************************
            if not (CP-Do-Not-Contact = 'P' or
                    CP-Do-Not-Contact = 'X' or
                    CP-Do-Not-Contact = ' ')
@@ -117,19 +121,19 @@
            .
 
        2400-Check-Language-Code.
-      *****************************************************************
+      ******************************************************************
       * Ensure language code matches specifications
-      *****************************************************************
+      ******************************************************************
            if not (CP-Lang = 'EN' or CP-Lang = 'ES')
                move "Invalid Language Code" to Validation-Errors
            end-if
            .
 
        4000-Return-to-Caller.
-      *****************************************************************
-      * After performing validation, return control to the calling 
+      ******************************************************************
+      * After performing validation, return control to the calling
       * program
-      *****************************************************************
+      ******************************************************************
            EXEC CICS PUT CONTAINER(CP-Container-Name)
                CHANNEL(CP-Channel-Name)
                FROM(CP-Container-Data)

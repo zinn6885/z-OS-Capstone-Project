@@ -87,11 +87,13 @@ Table Name: **CONTACTS**
 | LAST_RESPONSE  | DATE         | null        | Date of latest response                       |
 | DO_NOT_CONTACT | CHARACTER(1) | null        | "X" do not send, "P" pending request, or null |
 
+Run `<userid>.CAP.SQL(CRTCON)` to create and initialize the table with `data/Mailout_Seed_Data.txt`
+
 #### Batch Job #1 - Ingest Data Feeds
 
 The first batch job will comprise several steps to read data feeds in different formats, reformat them into a common format, normalize the names, sort the records and merge the files before updating the system of record with new and modified contact information. The number of job steps will depend on how you choose to design the solution.
 
-![Fig. 1: Ingest data feeds (overview)](Pictures/Mailout_Fig_1.png)
+![Fig. 1: Ingest data feeds (overview)](pictures/Mailout_Fig_1.png)
 
 The first few steps of the job must read the three data feeds and sort them.
 
@@ -189,11 +191,16 @@ Record layout:
 | 103 - 142 | Email address                                                                                                                                                                                       |
 | 143 - 143 | Do Not Contact requested - "R". Otherwise blank                                                                                                                                                     |
 
+Run `<userid>.CAP.SOURCE(FEEDC)` to receieve in the feed data into a common file and sort the
+file into `<userid>.COMMON.SORTED.G0001V00`.
+
 ![Fig. 3: Rationalize names and guess the language if it is undetermined](pictures/Mailout_Fig_3.png)
 
 Write a COBOL program to clean up the input data and write good records to a Generation Data Set. Write "bad" records to an error file.
 
 For records with blanks in the language code field, guess the language based on the number of tokens in the name field. If there are four tokens, assume Spanish. Otherwise, assume English.
+
+Run `<userid>.CAP.SOURCE(RATIOC)` to receieve in the sorted data and move the rationalized data into `<userid>.CLEAN.G0001V00`.
 
 ![Fig. 4: Apply updates to the system of record data store](pictures/Mailout_Fig_4.png)
 
@@ -213,17 +220,31 @@ If the inbound record matches an existing contact in our system of record, then 
 | R                    | not set                        | P                          |
 | blank                | any                            | no change                  |
 
+Run `<userid>.CAP.SOURCE(UPDATEC)` to receieve in the cleaned data and update the CONTACTS table.
+
 #### Batch Job #2 - Montly mailout job
 
 ![Fig. 5: Monthly mailout job overview](pictures/Mailout_Fig_5.png)
 
 ![Fig. 6: Monthly mailout job overview](pictures/Mailout_Fig_6.png)
 
+Run `<userid>.CAP.SOURCE(SELCONC)` to select the contacts from the table that are eligible to receive mail and move that to `<userid>.CAP.SEND`.
+
 ![Fig. 7: Monthly mailout job overview](pictures/Mailout_Fig_7.png)
+
+Run `<userid>.CAP.SOURCE(SENDMC)` to call subprogram `<userid>.CAP.SOURCE(MAILSND)` to send mail to eligble receipients and move all people who were sent mail to `<userid>.CAP.SENT`.
 
 #### CICS application to query the system of record
 
 If your bootcamp curriculum included CICS application development, then develop a BMS mapset and COBOL program to browse the system of record back end data store (either VSAM KSDS or DB2) and display the records.
+
+Compile `<userid>.CAP.SOURCE(CAPVIEW)` with `<userid>.CAP.JOBLIB(DB2CICS)` and bind it with `<userid>.CAP.JOBLIB(DB2B)`, binding program `CAPVIEW` with plan `MATEGDA'.
+Compile the mapset `<userid>.CAP.MAPLIB(CAPVMSD)`. 
+Define and install `<userid>.CAP.SOURCE(CAPVIEW)`and`<userid>.CAP.MAPLIB(CAPVMSD)`.
+Define and install transaction `MGD1`with reference to`<userid>.CAP.SOURCE(CAPVIEW)`.
+Define and install DB2entry `MGDENT1`and DB2tran`MGDTRN1`, linking the two. Make sure to connet `MGDENT1`with plan`MATEGDA`and`MGDTRN1`with transaction`MGD1`. 
+Set programs `CAPVIEW`and`CAPVMSD`.
+Run transaction `MGD1` to display the records in the table.
 
 ![Fig. : CICS application](pictures/Mailout_Fig_8.png)
 
@@ -265,3 +286,12 @@ Run transaction `MGD1` to display the records in the table.
 
 
 SETUP FOR CICS and DB2
+
+Compile `<userid>.CAP.SOURCE(CAPUPD)` with `<userid>.CAP.JOBLIB(DB2CICS)` and bind it with `<userid>.CAP.JOBLIB(DB2B)`, binding program `CAPUPD` with plan `MATEGDB`.
+Compile `<userid>.CAP.SOURCE(CAPVAL)`with`<userid>.CAP.JOBLIB(CICSC)`
+Compile the mapset`<userid>.CAP.MAPLIB(CAPUMSD)`.
+Define and install `<userid>.CAP.SOURCE(CAPUPD)`, `<userid>.CAP.SOURCE(CAPVAL)`, and `<userid>.CAP.MAPLIB(CAPVMSD)`.
+Define and install transaction `MGD3`with reference to`<userid>.CAP.SOURCE(CAPUPD)`.
+Define and install DB2entry `MGDENT2`and DB2tran`MGDTRN2`, linking the two. Make sure to connet `MGDENT2`with plan`MATEGDB`and`MGDTRN2`with transaction`MGD3`.
+Set programs `CAPUPD`, `CAPVAL`, and `CAPUMSD`.
+Run transaction `MGD1` to display the records in the table, put an 'I' in the action section and hit enter to update a record in the table.

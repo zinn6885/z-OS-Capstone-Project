@@ -64,6 +64,9 @@
            .
 
        1000-Read-Clean.
+      ******************************************************************
+      * Open clean input file and process each contact record.
+      ******************************************************************
            perform 1100-Open
            perform 2130-Get-Current-Date
            perform 1200-Read-Next
@@ -74,6 +77,9 @@
            .
 
        1100-Open.
+      ******************************************************************
+      * Open cleaned contact input file.
+      ******************************************************************
            open input Clean-File
            if not OK of Clean-File-Status
                display 'Did not open file: '
@@ -82,6 +88,9 @@
            .
 
        1200-Read-Next.
+      ******************************************************************
+      * Read next clean record and update CONTACTS if read succeeds.
+      ******************************************************************
            read Clean-File next into Clean-Record end-read
            if not EOF of Clean-File-Status
                if not OK of Clean-File-Status
@@ -98,6 +107,9 @@
            .
 
        1300-Close-Clean.
+      ******************************************************************
+      * Close cleaned contact input file.
+      ******************************************************************
            close Clean-File
            if not OK of Clean-File-Status
                display 'Did not open file: '
@@ -106,6 +118,9 @@
            .
 
        2100-Create-Record.
+      ******************************************************************
+      * Build CONTACTS host variables from the clean input record.
+      ******************************************************************
            perform 2110-Initialize-Record
            move C-Language-Code to LANG
            perform 2120-Create-Name
@@ -123,6 +138,9 @@
            .
 
        2110-Initialize-record.
+      ******************************************************************
+      * Clear CONTACTS fields and set nullable columns to NULL.
+      ******************************************************************
            initialize DCLCONTACTS
            move -1 to MIDDLE-NAME-IND
            move -1 to ADDL-NAME-IND
@@ -134,6 +152,9 @@
            .
 
        2120-Create-Name.
+      ******************************************************************
+      * Split full name into first, middle, surname, and addl names.
+      ******************************************************************
            move zero to Tally-Field
            inspect function trim(C-Name)
                tallying Tally-Field for all space
@@ -191,11 +212,17 @@
            .
 
        2130-Get-Current-Date.
+      ******************************************************************
+      * Format current date as YYYY-MM-DD for DB2 DATE columns.
+      ******************************************************************
            move function current-date(1:8) to WS-Current-Date
            move corr WS-Current-Date to WS-Current-Date-Formated
            .
 
        2200-Update-Table.
+      ******************************************************************
+      * Check if contact exists, then insert or update as needed.
+      ******************************************************************
            move spaces to Host-Variables
            EXEC SQL
            SELECT EMAIL_ADDR, SURNAME, DO_NOT_CONTACT
@@ -215,6 +242,9 @@
            .
 
        2210-Insert-Record.
+      ******************************************************************
+      * Insert new contact into CONTACTS.
+      ******************************************************************
            if DO-NOT-CONTACT = 'R'
                move 'P' to DO-NOT-CONTACT
            end-if
@@ -239,6 +269,9 @@
            .
 
        2220-Update-Record.
+      ******************************************************************
+      * Update existing contact including DNC status.
+      ******************************************************************
            if DO-NOT-CONTACT = 'R'
                if HV-DO-NOT-CONTACT = ' '
                    move 'P' to DO-NOT-CONTACT

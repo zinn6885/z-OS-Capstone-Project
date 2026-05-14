@@ -79,6 +79,7 @@
 //* ALLOCATE PS DATA SET USING IEFBR14 UTILITY               *
 //************************************************************
 //ALLOC    EXEC PGM=IEFBR14
+//ALLOC    EXEC PGM=IEFBR14
 //SYSPRINT DD SYSOUT=*
 //SYSOUT   DD SYSOUT=*
 //SYSDUMP  DD SYSOUT=*
