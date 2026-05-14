@@ -107,19 +107,6 @@ DNC,143,1,CH
 /*
 //*END FEEDC
 //************************************************************
-//* DEFINE GDG                                               *
-//************************************************************
-//DEFINE   EXEC PGM=IDCAMS
-//SYSPRINT DD SYSOUT=*
-//SYSIN    DD *
-  DELETE MATEGE.CAP.CLEAN GDG FORCE
-  IF LASTCC < 9 THEN -
-  DEFINE GDG(NAME(MATEGE.CAP.CLEAN) -
-    LIMIT(50) -
-    NOEMPTY -
-    SCRATCH)
-/*
-//************************************************************
 //* ALLOCATE PS DATA SET USING IEFBR14 UTILITY               *
 //************************************************************
 //ALLOC    EXEC PGM=IEFBR14
@@ -140,7 +127,7 @@ DNC,143,1,CH
 //             SRCLIB=&SYSUID..CAP.SOURCE,
 //             MEMBER=RATIO
 //RUNCODE EXEC PGM=RATIO
-//SFILE   DD DSN=&SYSUID..CAP.SORTED(0),DISP=SHR
+//SFILE   DD DSN=&SYSUID..CAP.SORTED(+1),DISP=SHR
 //EFILE   DD DSN=&SYSUID..CAP.ERRORS,DISP=SHR
 //CLFILE  DD DSN=&SYSUID..CAP.CLEAN(+1),DISP=SHR
 //STEPLIB DD DSN=&SYSUID..CAP.LOAD,DISP=SHR
