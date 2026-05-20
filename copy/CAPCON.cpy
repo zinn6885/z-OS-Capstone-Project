@@ -5,17 +5,17 @@
            05  CP-View-Mapset       pic x(08) value "CAPVMSD".
            05  CP-View-Map          pic x(08) value "CAPVMAP".
            05  CP-View-Program      pic x(08) value "CAPVIEW".
-           05  CP-View-TransId      pic x(04) value "MGD1".
+           05  CP-View-TransId      pic x(04) value "MGE1".
            05  CP-Add-Mapset        pic x(08) value "CAPUMSD".
            05  CP-Add-Map           pic x(08) value "CAPUMAP".
            05  CP-Add-Program       pic x(08) value "CAPADD".
-           05  CP-Add-TransId       pic x(04) value "MGD2".
+           05  CP-Add-TransId       pic x(04) value "MGE3".
            05  CP-Update-Mapset     pic x(08) value "CAPUMSD".
            05  CP-Update-Map        pic x(08) value "CAPUMAP".
            05  CP-Update-Program    pic x(08) value "CAPUPD".
-           05  CP-Update-TransId    pic x(04) value "MGD3".
+           05  CP-Update-TransId    pic x(04) value "MGE2".
            05  CP-Delete-Mapset     pic x(08) value "CAPUMSD".
            05  CP-Delete-Map        pic x(08) value "CAPUMAP".
            05  CP-Delete-Program    pic x(08) value "CAPDEL".
-           05  CP-Delete-TransId    pic x(04) value "MGD4".
+           05  CP-Delete-TransId    pic x(04) value "MGE4".
            05  CP-Validation-Program pic x(08) value "CAPVAL".

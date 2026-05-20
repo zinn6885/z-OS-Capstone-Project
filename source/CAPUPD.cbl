@@ -133,7 +133,9 @@
       *****************************************************************
            evaluate EIBAID
                when DFHENTER
-                   if not Delete-Key
+                   if Delete-Key
+                       continue
+                   else
                        perform 2000-Validate-Input
                    end-if
                when DFHPF5
@@ -362,22 +364,18 @@
       *****************************************************************
       * Delete the record
       *****************************************************************
-           if Validation-Errors greater than spaces
-               move Validation-Errors to MSGO
+           EXEC SQL
+              DELETE FROM CONTACTS
+              WHERE EMAIL_ADDR = :CP-EMAIL-ADDR
+                AND SURNAME    = :CP-SURNAME
+           END-EXEC
+           if SQLCODE = 0
+               EXEC SQL COMMIT END-EXEC
+               move MSG-Record-Deleted to MSGO
            else
-               EXEC SQL
-                  DELETE FROM CONTACTS
-                  WHERE EMAIL_ADDR = :CP-EMAIL-ADDR
-                    AND SURNAME    = :CP-SURNAME
-               END-EXEC
-               if SQLCODE = 0
-                   EXEC SQL COMMIT END-EXEC
-                   move MSG-Record-Deleted to MSGO
-               else
-                   EXEC SQL ROLLBACK END-EXEC
-                   move "ADD" to ERR-Operation
-                   perform 8200-SQL-Error
-               end-if
+               EXEC SQL ROLLBACK END-EXEC
+               move "ADD" to ERR-Operation
+               perform 8200-SQL-Error
            end-if
            .
 
@@ -426,7 +424,7 @@
       * performing a File Control operation.
       *****************************************************************
            move SQLCODE to ERR-SQL
-           move MSG-File-Error to MSG-Out
+           move MSG-File-Error to MSGO
            set Highlight-Error to true
            perform 9100-Display-and-Return
            .
